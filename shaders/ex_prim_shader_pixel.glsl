@@ -12,7 +12,7 @@ varying vec2 varying_texcoord;
 varying vec2 uv;
 
 const vec2 light = vec2(0.2, 0.5);
-const int steps = 3360;
+const int steps = 130;
 const float f_steps = float(steps);
 
 
