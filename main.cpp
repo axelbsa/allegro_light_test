@@ -1,4 +1,6 @@
+#include <math.h>
 #include <stdio.h>
+
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_audio.h>
@@ -6,16 +8,19 @@
 #include <allegro5/allegro_opengl.h>
 #include <allegro5/allegro_native_dialog.h>
 
+#if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
-#include <math.h>
+#else
+#include <sys/time.h>
+#endif
 
 #define ALLEGRO_STATICLINK
 
 #define MIN_INTERVAL (1.0 / 100.0)
 #define MAX_LATENCY   0.5
 
-#define WIDTH 1024 * 2
-#define HEIGHT 768 * 2
+#define WIDTH 1024
+#define HEIGHT 768
 
 ALLEGRO_BITMAP *background_1;
 ALLEGRO_SHADER *shader;
@@ -185,11 +190,13 @@ void draw_frame()
 
     al_set_shader_int("test", 0);
     al_set_shader_float_vector("lum", 3, &lumi[0], 1);
-    al_draw_bitmap(background_1, 0, 0, 0);
+    //al_draw_bitmap(background_1, 0, 0, 0);
+    al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 0, 0);
 
     al_set_shader_int("test", 1);
     al_set_shader_float_vector("lum", 3, &lumi[3], 1);
-    al_draw_bitmap(background_1, 0, 775, 0);
+    //al_draw_bitmap(background_1, 0, 775, 0);
+    al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 350, 0);
 
     /* 
     //Draw the last one transformed
