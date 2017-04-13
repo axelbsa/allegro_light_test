@@ -193,10 +193,12 @@ void draw_frame()
     };
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
-    al_set_shader_int("test", 0);
+    al_set_shader_int("test", 1);
     al_set_shader_float_vector("lum", 3, &lumi[0], 1);
     al_draw_bitmap(cob_background, 0, 0, 0);
-    al_draw_bitmap(heli, 200, 200, 0);
+
+    //al_set_shader_int("test", 0);
+    //al_draw_bitmap(heli, 200, 200, 0);
     //al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 0, 0);
 
     //al_set_shader_int("test", 1);

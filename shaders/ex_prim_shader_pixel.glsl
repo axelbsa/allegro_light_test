@@ -11,7 +11,7 @@ varying vec4 varying_color;
 varying vec2 varying_texcoord;
 varying vec2 uv;
 
-const vec2 light = vec2(0.2, 0.5);
+const vec2 light = vec2(0.25, 0.8);
 const int steps = 130;
 const float f_steps = float(steps);
 
@@ -42,14 +42,14 @@ void main()
         float sample_x = uv.x + (dx * float(i));
         float sample_y = uv.y + (dy * float(i));
         vec4 color = texture2D(al_tex, vec2(sample_x, sample_y));
-        if(color.r < 0.7) {
+        if(color.r < 0.165) {
     	    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     	    break;
     	}
     }
     
-    if(distance(uv, light) < 0.01) {
-    	gl_FragColor = vec4(1.0, 0.6, 0.0, 1.0);
+    if(distance(uv, light) < 0.005) {
+    	gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
     }
   }
 }
