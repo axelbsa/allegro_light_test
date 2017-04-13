@@ -1,17 +1,23 @@
 CC=g++
 # OPT = -static -mwindows -static-libgcc -std=gnu++11
 OUT = light
+DYN_OUT = light_dynamic
 SRC = main.cpp
 
 PLATFORM = $(shell uname)
 
 # Predefine for windows that not always returns the same uname
-OPT = -mwindows
+# Static Windows
+OPT = -mwindows -m32 -static-libgcc
 LIBS =	-lallegro_monolith-static \
 		-lwinmm -lpsapi -lshlwapi \
 		-lopengl32 -lole32 \
-		-lpng16 -ljpeg -lzlib
+		-lpng12 -ljpeg -lzlib
 
+# Dynamic windows
+DYN_LIBS = -lallegro_monolith
+
+# Static Linux
 ifeq ($(findstring Linux,$(PLATFORM)),Linux)
 	OPT = -static-libgcc -std=gnu++11
 	LIBS= -lallegro -lallegro_image \
@@ -24,6 +30,9 @@ endif
 
 $(OUT): $(SRC)
 	$(CC) -o $@ $^ $(OPT) $(LIBS)
+
+dyn: $(SRC)
+	$(CC) -o $(DYN_OUT) $^ $(OPT) $(DYN_LIBS)
 
 clean:
 	del *.o *.exe
