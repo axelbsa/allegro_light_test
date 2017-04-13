@@ -33,9 +33,9 @@ void main()
    	float dx = (light.x - uv.x) / f_steps;
     float dy = (light.y - uv.y) / f_steps;
 
-    vec4 Color = texture2D(al_tex, varying_texcoord);
+    vec4 Color = varying_color * texture2D(al_tex, varying_texcoord);
     vec4 tmp = varying_color * texture2D(al_tex, varying_texcoord);
-    gl_FragColor = vec4(Color.r, Color.g, Color.b, 1.0);
+    gl_FragColor = vec4(Color.r, Color.g, Color.b, Color.a);
     
    if (test > 0) {
     for(int i = 0; i < steps; i++) {
