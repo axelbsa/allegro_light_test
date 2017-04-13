@@ -23,6 +23,9 @@
 #define HEIGHT 768
 
 ALLEGRO_BITMAP *background_1;
+ALLEGRO_BITMAP *cob_background;
+ALLEGRO_BITMAP *heli;
+
 ALLEGRO_SHADER *shader;
 
 ALLEGRO_TIMER *timer;
@@ -150,6 +153,8 @@ int video_init()
 int assets_init() 
 {
     background_1 = al_load_bitmap("assets/bg.png");
+    cob_background = al_load_bitmap("assets/cob_back_big.png");
+    heli = al_load_bitmap("assets/heli.png");
     return 1;
 }
 
@@ -190,13 +195,14 @@ void draw_frame()
 
     al_set_shader_int("test", 0);
     al_set_shader_float_vector("lum", 3, &lumi[0], 1);
-    //al_draw_bitmap(background_1, 0, 0, 0);
-    al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 0, 0);
+    al_draw_bitmap(cob_background, 0, 0, 0);
+    al_draw_bitmap(heli, 200, 200, 0);
+    //al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 0, 0);
 
-    al_set_shader_int("test", 1);
-    al_set_shader_float_vector("lum", 3, &lumi[3], 1);
+    //al_set_shader_int("test", 1);
+    //al_set_shader_float_vector("lum", 3, &lumi[3], 1);
     //al_draw_bitmap(background_1, 0, 775, 0);
-    al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 350, 0);
+    //al_draw_bitmap_region(background_1, 350, 400, 768, 400, 0, 350, 0);
 
     /* 
     //Draw the last one transformed
