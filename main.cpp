@@ -9,6 +9,8 @@
 #include <allegro5/allegro_opengl.h>
 #include <allegro5/allegro_native_dialog.h>
 
+#include "SDL2/SDL.h"
+
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #else
@@ -115,6 +117,7 @@ double get_time()
 
 int video_init()
 {
+    SDL_Init (SDL_INIT_EVENTS); //Because f*** allegro events
 	ALLEGRO_DISPLAY *display = NULL;
 
 	const char* vertex_shader_file;
@@ -136,23 +139,23 @@ int video_init()
 	}
 
 	al_init_image_addon();
-	al_install_keyboard();
-	if (!al_install_mouse()) 
-	{
-		fprintf(stderr, "No mouse support\n");
-		return -1;
-	}
+	//al_install_keyboard();
+	//if (!al_install_mouse()) 
+	//{
+		//fprintf(stderr, "No mouse support\n");
+		//return -1;
+	//}
 
 	al_init_font_addon(); // initialize the font addon
 	font = al_create_builtin_font();
 
-	timer = al_create_timer(1.0 / 60);
-	queue = al_create_event_queue();
-	al_register_event_source(queue, al_get_display_event_source(display));
-	al_register_event_source(queue, al_get_keyboard_event_source());
-	al_register_event_source(queue, al_get_timer_event_source(timer));
-	al_init_timeout(&timeout, 0.12);
-	al_start_timer(timer);
+	timer = al_create_timer(1.0 / 60.0);
+	//queue = al_create_event_queue();
+	//al_register_event_source(queue, al_get_display_event_source(display));
+	//al_register_event_source(queue, al_get_keyboard_event_source());
+	//al_register_event_source(queue, al_get_timer_event_source(timer));
+	//al_init_timeout(&timeout, 0.12);
+	//al_start_timer(timer);
 
 	shader = al_create_shader(ALLEGRO_SHADER_GLSL);
 	if (!shader) {
@@ -192,15 +195,22 @@ int init_start_values()
 	return 1;
 }
 
-void game_tick(double delta_time)
+bool game_tick(double delta_time)
 {
 	ALLEGRO_EVENT event;
+
+    if (al_is_event_queue_empty(queue))
+    {
+        return false;
+    }
+
 	al_wait_for_event_until(queue, &event, &timeout);
+
 	if (event.type == ALLEGRO_EVENT_MOUSE_AXES || event.type == ALLEGRO_EVENT_MOUSE_ENTER_DISPLAY)
 	{
 		mouse_x = event.mouse.x;
 		mouse_y = event.mouse.y;
-		printf("Mouse position X=%d, Y=%d\n", mouse_x, mouse_y);
+		printf("Mouse position X=%f, Y=%f\n", mouse_x, mouse_y);
 	}
 	switch (event.type) {
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
@@ -210,15 +220,95 @@ void game_tick(double delta_time)
 			if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
 				game_is_running = 0;
 			if (event.keyboard.keycode == ALLEGRO_KEY_W)
+                fprintf(stderr, "W pressed    ");
 				mouse_y += 0.01;
 			if (event.keyboard.keycode == ALLEGRO_KEY_S)
+                fprintf(stderr, "S pressed    ");
 				mouse_y -= 0.01;
 			if (event.keyboard.keycode == ALLEGRO_KEY_A)
+                fprintf(stderr, "A pressed    ");
 				mouse_x -= 0.01;
 			if (event.keyboard.keycode == ALLEGRO_KEY_D)
+                fprintf(stderr, "D pressed    ");
 				mouse_x += 0.01;
 		break;
 	}
+
+    return true;
+}
+
+bool SDL_game_tick(double delta_time)
+{
+    SDL_Event event;
+    while( SDL_PollEvent( &event ) ){
+        fprintf(stderr, "are we getting anything?? \n");
+	
+        switch( event.type ){
+            /* Look for a keypress */
+            case SDL_KEYDOWN:
+                /* Check the SDLKey values and move change the coords */
+                switch( event.key.keysym.sym ){
+                    case SDLK_LEFT:
+				        mouse_x -= 0.01;
+                        //alien_xvel = -1;
+                        break;
+                    case SDLK_RIGHT:
+				        mouse_x += 0.01;
+                        //alien_xvel =  1;
+                        break;
+                    case SDLK_UP:
+				        mouse_y += 0.01;
+                        break;
+                    case SDLK_DOWN:
+				        mouse_y -= 0.01;
+                        fprintf(stderr, "DOWN is pressed     ");
+                        //alien_yvel =  1;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+                /* We must also use the SDL_KEYUP events to zero the x */
+                /* and y velocity variables. But we must also be       */
+                /* careful not to zero the velocities when we shouldn't*/
+            case SDL_KEYUP:
+                switch( event.key.keysym.sym ){
+                    case SDL_QUIT:
+                        game_is_running = 0;
+                        break;
+                    case SDLK_LEFT:
+                        /* We check to make sure the alien is moving */
+                        /* to the left. If it is then we zero the    */
+                        /* velocity. If the alien is moving to the   */
+                        /* right then the right key is still press   */
+                        /* so we don't tocuh the velocity            */
+                        //if( alien_xvel < 0 )
+                            //alien_xvel = 0;
+                        break;
+                    case SDLK_RIGHT:
+                        //if( alien_xvel > 0 )
+                            //alien_xvel = 0;
+                        break;
+                    case SDLK_UP:
+                        //if( alien_yvel < 0 )
+                            //alien_yvel = 0;
+                        break;
+                    case SDLK_DOWN:
+                        fprintf(stderr, "DOWN is pressed     ");
+                        //if( alien_yvel > 0 )
+                            //alien_yvel = 0;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    return true;
 }
 
 void draw_frame(double delta_time, int fps)
@@ -236,7 +326,7 @@ void draw_frame(double delta_time, int fps)
 		4.0, 4.0, 1.0
 	};
 	const float resolution[2] = { (float)WIDTH, (float)HEIGHT };
-	const float light_pos[3] = { (float)mouse_x, (float)sin(delta_time) + 0.5, 0.03f };
+	const float light_pos[3] = { (double)mouse_x, (double)sin(delta_time) + 0.5, 0.03 };
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
 
@@ -315,8 +405,13 @@ int main_loop()
 			initial_time = get_time();
 		}
 
-		game_tick(target_time - last_game_time);
-		draw_frame(target_time - last_game_time, fps);
+		if (SDL_game_tick(target_time - last_game_time)) {
+		    draw_frame(target_time - last_game_time, fps);
+        }
+
+		//if (game_tick(target_time - last_game_time)) {
+			//draw_frame(target_time - last_game_time, fps);
+        //}
 		al_flip_display();
 
 	}
