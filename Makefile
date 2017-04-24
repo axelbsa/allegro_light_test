@@ -20,8 +20,9 @@ DYN_LIBS = -lallegro_monolith
 
 # Static Linux
 ifeq ($(findstring Linux,$(PLATFORM)),Linux)
-	OPT = -static-libgcc -std=gnu++11
-	LIBS= -lallegro -lallegro_image \
+	OPT = -static-libgcc -std=gnu++11 -fpermissive
+	LIBS=   -lallegro \
+			-lallegro_image \
 			-lallegro_font -lallegro_ttf \
 			-lallegro_dialog
 endif
