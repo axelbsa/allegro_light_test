@@ -5,6 +5,7 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_font.h>
 #include <allegro5/allegro_opengl.h>
 #include <allegro5/allegro_native_dialog.h>
 
@@ -16,7 +17,7 @@
 
 #define ALLEGRO_STATICLINK
 
-#define MIN_INTERVAL (1.0 / 100.0)
+#define MIN_INTERVAL (1.0 / 60.0)
 #define MAX_LATENCY   0.5
 
 #define WIDTH 1024
@@ -24,11 +25,13 @@
 
 ALLEGRO_BITMAP *background_1;
 ALLEGRO_BITMAP *cob_background;
+ALLEGRO_BITMAP *cob_background_nrm;
 ALLEGRO_BITMAP *heli;
 
 ALLEGRO_SHADER *shader;
 
 ALLEGRO_TIMER *timer;
+ALLEGRO_TIMEOUT timeout;
 ALLEGRO_EVENT_QUEUE *queue;
 
 double start_time;
@@ -36,9 +39,25 @@ double current_time;
 double target_time;
 double last_game_time = 0.0;
 
-int map_x = 0;
+float mouse_x = 0.5;
+float mouse_y = 0.5;
 
+int map_x = 0;
 int game_is_running = 1;
+
+float DEFAULT_LIGHT_Z = 0.075f;
+
+// Light position based on mouse cursor
+int LIGHT_POS[2] = {WIDTH / 2, HEIGHT / 2};
+
+//Light RGB and intensity (alpha)
+const float LIGHT_COLOR[4] = {1.0f, 0.8f, 0.6f, 1.0f};
+
+//Ambient RGB and intensity (alpha)
+const float AMBIENT_COLOR[4] = {1.0f, 1.0f, 1.0f, 0.5f};
+
+//Attenuation coefficients for light falloff
+const float FALLOFF[3] = {0.4f, 3.0f, 20.0f};
 
 void abort_example(char const* format, ...)
 {
@@ -105,24 +124,21 @@ int video_init()
 
     al_init_image_addon();
     al_install_keyboard();
+    al_install_mouse();
+
+    al_init_font_addon(); // initialize the font addon
 
     display = al_create_display(WIDTH, HEIGHT);
     if(!display) {
         fprintf(stderr, "failed to create display!\n");
         return -1;
     }
-
-    al_clear_to_color(al_map_rgb(0,0,0));
-    al_flip_display();
-
-    //al_rest(10.0);
-    //al_destroy_display(display);
-
     timer = al_create_timer(1.0 / 60);
     queue = al_create_event_queue();
     al_register_event_source(queue, al_get_display_event_source(display));
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_timer_event_source(timer));
+    al_init_timeout(&timeout, 0.06);
     al_start_timer(timer);
 
     shader = al_create_shader(ALLEGRO_SHADER_GLSL);
@@ -152,8 +168,9 @@ int video_init()
 
 int assets_init() 
 {
-    background_1 = al_load_bitmap("assets/bg.png");
+    //background_1 = al_load_bitmap("assets/bg.png");
     cob_background = al_load_bitmap("assets/cob_back_big.png");
+    cob_background_nrm = al_load_bitmap("assets/cob_back_big_NRM.png");
     heli = al_load_bitmap("assets/heli.png");
     return 1;
 }
@@ -166,19 +183,31 @@ int init_start_values()
 void game_tick(double delta_time)
 {
     ALLEGRO_EVENT event;
-    al_wait_for_event(queue, &event);
+    al_wait_for_event_until(queue, &event, &timeout);
     switch (event.type) {
         case ALLEGRO_EVENT_DISPLAY_CLOSE:
             game_is_running = 0;
             break;
+        case ALLEGRO_EVENT_MOUSE_AXES:
+            mouse_x = event.mouse.x;
+            mouse_y = event.mouse.y;
+            break;
         case ALLEGRO_EVENT_KEY_CHAR:
             if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
                 game_is_running = 0;
+            if (event.keyboard.keycode == ALLEGRO_KEY_W)
+                mouse_y += 0.01;
+            if (event.keyboard.keycode == ALLEGRO_KEY_S)
+                mouse_y -= 0.01;
+            if (event.keyboard.keycode == ALLEGRO_KEY_A)
+                mouse_x -= 0.01;
+            if (event.keyboard.keycode == ALLEGRO_KEY_D)
+                mouse_x += 0.01;
             break;
     }
 }
 
-void draw_frame() 
+void draw_frame(double delta_time)
 {
     float lumi[6] = {
         0.6, 0.2, 0.1,
@@ -191,11 +220,29 @@ void draw_frame()
         1.0, 0.0, 4.0,
         4.0, 4.0, 1.0
     };
+    const float resolution[2] = {(float)WIDTH, (float)HEIGHT};
+    const float light_pos[3] = {(float)mouse_x, abs((float)sin(delta_time)) + 0.5, 0.03f};
+
     al_clear_to_color(al_map_rgb(0, 0, 0));
 
-    al_set_shader_int("test", 1);
-    al_set_shader_float_vector("lum", 3, &lumi[0], 1);
+    al_set_shader_sampler("cob_normal", cob_background_nrm, 1);
+    al_set_shader_float_vector("Resolution", 2, resolution, 1);
+    al_set_shader_float_vector("LightPos", 3, light_pos, 1);
+    al_set_shader_float_vector("LightColor", 4, LIGHT_COLOR, 1);
+    al_set_shader_float_vector("AmbientColor", 4, AMBIENT_COLOR, 1);
+    al_set_shader_float_vector("Falloff", 3, FALLOFF, 1);
     al_draw_bitmap(cob_background, 0, 0, 0);
+    
+    ALLEGRO_COLOR font_color = al_map_rgb(255, 255, 255);
+    //al_draw_text(NULL, font_color, 10, 10, 0, "SOME TEXT");
+    //void al_draw_text(const ALLEGRO_FONT *font,
+    //ALLEGRO_COLOR color, float x, float y, int flags,
+    //char const *text)
+
+    //al_set_shader_int("test", 1);
+    //al_set_shader_float_vector("lum", 3, &lumi[0], 1);
+    //al_set_shader_sampler("cob_normal", cob_background_nrm, 1);
+    //al_draw_bitmap(cob_background, 0, 0, 0);
 
     //al_set_shader_int("test", 0);
     //al_draw_bitmap(heli, 200, 200, 0);
@@ -240,7 +287,7 @@ int main_loop()
          * game_tick() again. */
         if (target_time >= last_game_time + MIN_INTERVAL)
         {
-            game_tick(target_time - last_game_time);
+            //game_tick(target_time - last_game_time);
             last_game_time = target_time;
         }
 
@@ -250,7 +297,8 @@ int main_loop()
            certain events may cause the display to get "lost," such as minimizing
            and restoring the window. By drawing within the loop, we are 
            safeguarding against that. */
-        draw_frame();
+        game_tick(target_time - last_game_time);
+        draw_frame(target_time - last_game_time);
         al_flip_display();
 
     }

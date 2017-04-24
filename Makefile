@@ -8,11 +8,12 @@ PLATFORM = $(shell uname)
 
 # Predefine for windows that not always returns the same uname
 # Static Windows
-OPT = -mwindows -m32 -static-libgcc
+OPT = -mwindows -static-libgcc
 LIBS =	-lallegro_monolith-static \
+		-lallegro_font-static \
 		-lwinmm -lpsapi -lshlwapi \
 		-lopengl32 -lole32 \
-		-lpng12 -ljpeg -lzlib
+		-lpng16 -ljpeg -lzlib
 
 # Dynamic windows
 DYN_LIBS = -lallegro_monolith
